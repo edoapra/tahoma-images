@@ -17,7 +17,7 @@ export https_proxy=http://proxy.emsl.pnl.gov:3128
 module purge
 module load openmpi/4.1.4
 export MYT=16
-srun -u -l --mpi=pmi2 -N $SLURM_NNODES -n $MYT singularity exec  oras://ghcr.io/edoapra/pyDNMFk-apptainer/apptainer:latest \
+srun -u -l --mpi=pmi2 -N $SLURM_NNODES -n $MYT singularity exec  oras://ghcr.io/edoapra/tahoma-images/pydnmfk_noucx:latest \
 python /pyDNMFk/main.py \
  --p_r=$MYT --p_c=1 --process='pyDNMFk'  --fpath='/pyDNMFk/data/' --ftype='mat' --fname='swim' \
  --init='nnsvd' --itr=5000 --norm='kl' --method='mu' --results_path='results/' \
