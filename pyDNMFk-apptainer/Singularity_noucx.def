@@ -1,0 +1,57 @@
+BootStrap: docker
+From: python:3.7
+%labels
+maintainer   Edoardo Apra <edoardo.apra@pnnl.gov>
+org.opencontainers.image.version  "1.0.0"
+org.opencontainers.image.authors  "Edoardo Apra"
+org.opencontainers.image.source "https://github.com/edoapra/pyDNMFk-apptainer"
+%post
+git clone https://github.com/lanl/pyDNMFk.git
+cd pyDNMFk
+apt-get update \
+&& apt-get -y install -y   tar libnl-3-200 libnl-route-3-200 libgomp1 libnuma1 \
+ g++  make ssh patch   unzip perl-base file \
+ python3 python3-dev cmake  unzip zip perl automake libtool autoconf flex  \
+ libnuma-dev libslurm-dev libpmi2-0-dev libpmi0-dev  libnl-3-dev libnl-route-3-dev udev \
+ librdmacm-dev librdmacm1 rdma-core libibverbs-dev  ibverbs-providers  \
+ libhwloc-dev \
+ pkg-config gawk  software-properties-common \
+&& export ompi=4.1.4\
+&& export ompi_prefix=ompi-$ompi\
+&& export OMPI_DIR=/opt/ompi\
+&& export SINGULARITY_ompi=4.1.4\
+&& export SINGULARITY_ompi_prefix=ompi-$ompi\
+&& export PATH=$OMPI_DIR/bin::/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+&& export LD_LIBRARY_PATH=$OMPI_DIR/lib \
+&& wget --progress=dot:giga https://github.com/open-mpi/ompi/archive/v$ompi.tar.gz -O - | tar xzf -   \
+&& cd $ompi_prefix                                                        && \
+./autogen.pl                                                           && \
+./configure  --prefix=$OMPI_DIR --without-ucx --enable-mca-no-build=btl-uct   \
+--disable-mpi-fortran \
+ --with-pmi --with-pmi-libdir=/usr/lib/x86_64-linux-gnu --enable-mpi1-compatibility --with-slurm --without-tm --without-lsf  \
+ --without-sge --without-alps --without-lustre --disable-memchecker \
+ --without-hcoll --disable-static  \
+--disable-mpi-java --enable-dlopen --without-cuda --without-verbs \
+--disable-mpi-cxx --disable-cxx-exceptions  \
+&& make -j 6                                                  \
+&&make install                                                             \
+&& make clean                                                               \
+&& cd .. ; rm -rf *tar*gz $ompi-prefix ucx-$ucx  \
+&& echo ' check ucx' \
+&& echo ' /opt/ompi/bin/ucx_info -v ' `/opt/ompi/bin/ucx_info -v|| true` \
+&& echo ' ucx Transports' `/opt/ompi/bin/ucx_info  -d |grep Transport |cut -c 19- || true` \
+&& echo '********'  \
+&& export PATH=$OMPI_DIR/bin:$PATH\
+&& export LD_LIBRARY_PATH=$OMPI_DIR/lib:$LD_LIBRARY_PATH\
+
+pip install --upgrade pip
+pip install  --no-binary :all: mpi4py
+#pip install mpi4py
+pip install pandas==1.2.5
+python setup.py install
+%environment
+OMPI_DIR=/opt/ompi
+export PATH=$OMPI_DIR/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin 
+export LD_LIBRARY_PATH=$OMPI_DIR/lib
+export OMPI_MCA_pml=ob1
+#cd /pyDNMFk
